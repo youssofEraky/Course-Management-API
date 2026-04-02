@@ -57,7 +57,10 @@ dotnet run
 
 Navigate to: `https://localhost:5001/swagger`
 
----
+---     
+ **7.run index.html(optional) to test all api at once**    
+
+ Navigate to: `Course-Management-API/wwwroot/index.html`
 
 ## Authentication
 
