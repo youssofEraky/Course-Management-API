@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CMS API Tester</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:       #0a0a0f;
+    --surface:  #12121a;
+    --card:     #1a1a26;
+    --border:   #2a2a3a;
+    --accent:   #7c6dfa;
+    --accent2:  #fa6d8f;
+    --green:    #4dffa0;
+    --red:      #ff5c6c;
+    --yellow:   #ffd166;
+    --text:     #e8e8f0;
+    --muted:    #6b6b80;
+    --mono:     'JetBrains Mono', monospace;
+    --sans:     'Syne', sans-serif;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    padding: 0;
+  }
+
+  /* ── Header ── */
+  .header {
+    padding: 28px 40px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    flex-wrap: wrap;
+    background: linear-gradient(180deg, #14142000 0%, transparent 100%);
+  }
+  .header-left h1 {
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .header-left p { font-size: 13px; color: var(--muted); margin-top: 3px; font-family: var(--mono); }
+
+  .url-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 8px 14px;
+    flex: 1;
+    max-width: 400px;
+  }
+  .url-bar label { font-size: 11px; color: var(--muted); white-space: nowrap; font-family: var(--mono); }
+  .url-bar input {
+    background: none;
+    border: none;
+    outline: none;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 13px;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .run-all-btn {
+    background: linear-gradient(135deg, var(--accent), #5a4fd4);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    padding: 10px 24px;
+    font-family: var(--sans);
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity .2s, transform .1s;
+    white-space: nowrap;
+  }
+  .run-all-btn:hover { opacity: .9; transform: translateY(-1px); }
+  .run-all-btn:active { transform: translateY(0); }
+  .run-all-btn:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+
+  /* ── Stats bar ── */
+  .stats-bar {
+    display: flex;
+    gap: 8px;
+    padding: 14px 40px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+  }
+  .stat {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    font-family: var(--mono);
+    padding: 4px 12px;
+    border-radius: 20px;
+    background: var(--card);
+  }
+  .stat-dot { width: 8px; height: 8px; border-radius: 50%; }
+  .stat-dot.pass { background: var(--green); box-shadow: 0 0 6px var(--green); }
+  .stat-dot.fail { background: var(--red);   box-shadow: 0 0 6px var(--red); }
+  .stat-dot.skip { background: var(--muted); }
+  .stat-dot.run  { background: var(--yellow); box-shadow: 0 0 6px var(--yellow); animation: pulse 1s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+  /* ── Layout ── */
+  .main { display: flex; height: calc(100vh - 121px); }
+
+  .sidebar {
+    width: 260px;
+    min-width: 260px;
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+    padding: 16px 0;
+  }
+  .sidebar::-webkit-scrollbar { width: 4px; }
+  .sidebar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+  .group-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    color: var(--muted);
+    padding: 12px 20px 6px;
+    text-transform: uppercase;
+  }
+
+  .test-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 20px;
+    cursor: pointer;
+    transition: background .15s;
+    border-left: 3px solid transparent;
+  }
+  .test-item:hover { background: var(--card); }
+  .test-item.active { background: var(--card); border-left-color: var(--accent); }
+
+  .test-item .method-badge {
+    font-family: var(--mono);
+    font-size: 9px;
+    font-weight: 700;
+    padding: 2px 5px;
+    border-radius: 4px;
+    min-width: 38px;
+    text-align: center;
+  }
+  .badge-get    { background: #1a3a2a; color: var(--green); }
+  .badge-post   { background: #2a2a1a; color: var(--yellow); }
+  .badge-put    { background: #1a2a3a; color: #6ab4ff; }
+  .badge-delete { background: #3a1a1a; color: var(--red); }
+
+  .test-item .test-name { font-size: 12px; flex: 1; line-height: 1.3; }
+
+  .status-icon { font-size: 12px; margin-left: auto; }
+
+  /* ── Detail panel ── */
+  .detail {
+    flex: 1;
+    overflow-y: auto;
+    padding: 28px 36px;
+  }
+  .detail::-webkit-scrollbar { width: 4px; }
+  .detail::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+  .detail-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+  }
+  .detail-title { font-size: 20px; font-weight: 800; }
+  .detail-subtitle { font-size: 13px; color: var(--muted); margin-top: 4px; font-family: var(--mono); }
+
+  .run-btn {
+    background: var(--card);
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    border-radius: 8px;
+    padding: 8px 20px;
+    font-family: var(--sans);
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background .15s;
+    white-space: nowrap;
+  }
+  .run-btn:hover { background: var(--accent); color: #fff; }
+
+  .section-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .code-block {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    font-family: var(--mono);
+    font-size: 12px;
+    line-height: 1.7;
+    overflow-x: auto;
+    margin-bottom: 20px;
+    white-space: pre-wrap;
+    word-break: break-all;
+  }
+
+  .result-box {
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    overflow: hidden;
+    margin-bottom: 20px;
+  }
+  .result-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 16px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    font-family: var(--mono);
+    font-size: 12px;
+  }
+  .status-pill {
+    padding: 2px 10px;
+    border-radius: 20px;
+    font-weight: 700;
+    font-size: 11px;
+  }
+  .pill-pass { background: #0a2a18; color: var(--green); border: 1px solid #1a5a30; }
+  .pill-fail { background: #2a0a0a; color: var(--red);   border: 1px solid #5a1a1a; }
+  .pill-run  { background: #2a2a0a; color: var(--yellow); border: 1px solid #5a5a1a; }
+  .pill-idle { background: var(--card); color: var(--muted); border: 1px solid var(--border); }
+
+  .result-body {
+    padding: 16px;
+    font-family: var(--mono);
+    font-size: 12px;
+    line-height: 1.7;
+    background: var(--card);
+    white-space: pre-wrap;
+    word-break: break-all;
+    max-height: 300px;
+    overflow-y: auto;
+    color: #c8c8d8;
+  }
+
+  /* JSON syntax highlight */
+  .json-key    { color: #7c9ef5; }
+  .json-str    { color: #98e06a; }
+  .json-num    { color: #ffd166; }
+  .json-bool   { color: var(--accent2); }
+  .json-null   { color: var(--muted); }
+
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 60%;
+    color: var(--muted);
+    text-align: center;
+    gap: 12px;
+  }
+  .empty-state .icon { font-size: 48px; opacity: .3; }
+  .empty-state p { font-size: 14px; }
+
+  .token-display {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 16px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--green);
+    word-break: break-all;
+    margin-bottom: 20px;
+    line-height: 1.5;
+  }
+  .token-label { color: var(--muted); font-size: 10px; margin-bottom: 4px; letter-spacing: 1px; text-transform: uppercase; }
+
+  .divider { border: none; border-top: 1px solid var(--border); margin: 24px 0; }
+
+  .note {
+    background: #1a1a2a;
+    border-left: 3px solid var(--accent);
+    border-radius: 0 8px 8px 0;
+    padding: 10px 14px;
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 20px;
+    line-height: 1.6;
+  }
+
+  @keyframes fadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+  .fade-in { animation: fadeIn .25s ease both; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <h1>CMS API Tester</h1>
+    <p>Course Management System — Full Test Suite</p>
+  </div>
+  <div class="url-bar">
+    <label>BASE URL</label>
+    <input type="text" id="baseUrl" value="http://localhost:5000" placeholder="http://localhost:5000">
+  </div>
+  <button class="run-all-btn" id="runAllBtn" onclick="runAll()">▶ Run All Tests</button>
+</div>
+
+<div class="stats-bar">
+  <div class="stat"><div class="stat-dot pass"></div><span id="passCount">0 passed</span></div>
+  <div class="stat"><div class="stat-dot fail"></div><span id="failCount">0 failed</span></div>
+  <div class="stat"><div class="stat-dot skip"></div><span id="skipCount">0 pending</span></div>
+</div>
+
+<div class="main">
+  <div class="sidebar" id="sidebar"></div>
+  <div class="detail" id="detail">
+    <div class="empty-state">
+      <div class="icon">⚡</div>
+      <p>Click a test on the left or hit<br><strong>Run All Tests</strong> to start</p>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── State ────────────────────────────────────────────────────────────────────
+let token = '';
+let studentToken = '';
+let state = { instructorId: null, studentId: null, courseId: null };
+let results = {};
+let activeTest = null;
+
+// ── Test Definitions ─────────────────────────────────────────────────────────
+const groups = [
+  {
+    label: '🔐 Auth',
+    tests: [
+      {
+        id: 'register_instructor',
+        name: 'Register Instructor',
+        method: 'POST',
+        path: '/api/instructors',
+        auth: false,
+        body: { firstName: 'Ahmed', lastName: 'Hassan', email: `ahmed_${Date.now()}@uni.com`, password: 'password123', role: 'Instructor' },
+        expect: [200, 201],
+        after: (data) => { state.instructorId = data.id; state.instructorEmail = data.email; }
+      },
+      {
+        id: 'login_instructor',
+        name: 'Login as Instructor',
+        method: 'POST',
+        path: '/api/auth/login',
+        auth: false,
+        bodyFn: () => ({ email: state.instructorEmail, password: 'password123', role: 'Instructor' }),
+        expect: [200],
+        after: (data) => { token = data.token; }
+      }
+    ]
+  },
+  {
+    label: '👨‍🏫 Instructors',
+    tests: [
+      {
+        id: 'get_all_instructors',
+        name: 'Get all instructors',
+        method: 'GET',
+        path: '/api/instructors',
+        auth: true,
+        note: 'Admin only — returns 403 with Instructor token (this is expected and correct)',
+        expect: [200, 403]
+      },
+      {
+        id: 'get_instructor_by_id',
+        name: 'Get instructor by ID',
+        method: 'GET',
+        pathFn: () => `/api/instructors/${state.instructorId}`,
+        auth: true,
+        expect: [200]
+      },
+      {
+        id: 'upsert_profile',
+        name: 'Create instructor profile',
+        method: 'PUT',
+        pathFn: () => `/api/instructors/${state.instructorId}/profile`,
+        auth: true,
+        body: { bio: 'PhD in Computer Science', department: 'Engineering', officeRoom: 'B204', phoneNumber: '01012345678' },
+        expect: [200]
+      },
+      {
+        id: 'update_instructor',
+        name: 'Update instructor',
+        method: 'PUT',
+        pathFn: () => `/api/instructors/${state.instructorId}`,
+        auth: true,
+        body: { firstName: 'Ahmed Updated', lastName: 'Hassan' },
+        expect: [200]
+      }
+    ]
+  },
+  {
+    label: '🎓 Students',
+    tests: [
+      {
+        id: 'register_student',
+        name: 'Register student',
+        method: 'POST',
+        path: '/api/students',
+        auth: false,
+        body: { firstName: 'Sara', lastName: 'Ali', email: `sara_${Date.now()}@uni.com`, password: 'password123', major: 'Computer Science', dateOfBirth: '2002-05-15T00:00:00' },
+        expect: [200, 201],
+        after: (data) => { state.studentId = data.id; state.studentEmail = data.email; }
+      },
+      {
+        id: 'login_student',
+        name: 'Login as Student',
+        method: 'POST',
+        path: '/api/auth/login',
+        auth: false,
+        bodyFn: () => ({ email: state.studentEmail, password: 'password123', role: 'Student' }),
+        expect: [200],
+        after: (data) => { studentToken = data.token; }
+      },
+      {
+        id: 'get_student_by_id',
+        name: 'Get student by ID',
+        method: 'GET',
+        pathFn: () => `/api/students/${state.studentId}`,
+        auth: true,
+        expect: [200]
+      },
+      {
+        id: 'update_student',
+        name: 'Update student',
+        method: 'PUT',
+        pathFn: () => `/api/students/${state.studentId}`,
+        auth: true,
+        useStudentToken: true,
+        body: { firstName: 'Sara Updated', major: 'Software Engineering' },
+        expect: [200, 204]
+      },
+      {
+        id: 'get_all_students',
+        name: 'Get all students',
+        method: 'GET',
+        path: '/api/students',
+        auth: true,
+        expect: [200]
+      }
+    ]
+  },
+  {
+    label: '📚 Courses',
+    tests: [
+      {
+        id: 'create_course',
+        name: 'Create course',
+        method: 'POST',
+        path: '/api/courses',
+        auth: true,
+        bodyFn: () => ({ title: 'Web Development', description: 'HTML, CSS, JS fundamentals', courseCode: `CS${Date.now().toString().slice(-4)}`, credits: 3, maxCapacity: 30, instructorId: state.instructorId }),
+        expect: [200, 201],
+        after: (data) => { state.courseId = data.id; }
+      },
+      {
+        id: 'get_all_courses',
+        name: 'Get all courses',
+        method: 'GET',
+        path: '/api/courses',
+        auth: true,
+        expect: [200]
+      },
+      {
+        id: 'get_course_by_id',
+        name: 'Get course by ID',
+        method: 'GET',
+        pathFn: () => `/api/courses/${state.courseId}`,
+        auth: true,
+        expect: [200]
+      },
+      {
+        id: 'update_course',
+        name: 'Update course',
+        method: 'PUT',
+        pathFn: () => `/api/courses/${state.courseId}`,
+        auth: true,
+        body: { title: 'Advanced Web Development', credits: 4 },
+        expect: [200]
+      }
+    ]
+  },
+  {
+    label: '📋 Enrollments',
+    tests: [
+      {
+        id: 'enroll_student',
+        name: 'Enroll student in course',
+        method: 'POST',
+        path: '/api/enrollments',
+        auth: true,
+        useStudentToken: true,
+        bodyFn: () => ({ studentId: state.studentId, courseId: state.courseId }),
+        expect: [200, 201],
+        after: (data) => {
+          state.enrollStudentId = state.studentId;
+          state.enrollCourseId  = state.courseId;
+        }
+      },
+      {
+        id: 'get_enrollments_by_student',
+        name: 'Get enrollments by student',
+        method: 'GET',
+        pathFn: () => `/api/enrollments/student/${state.enrollStudentId || state.studentId}`,
+        auth: true,
+        expect: [200]
+      },
+      {
+        id: 'get_enrollments_by_course',
+        name: 'Get enrollments by course',
+        method: 'GET',
+        pathFn: () => `/api/enrollments/course/${state.enrollCourseId || state.courseId}`,
+        auth: true,
+        expect: [200]
+      },
+      {
+        id: 'update_enrollment',
+        name: 'Assign grade to enrollment',
+        method: 'PUT',
+        pathFn: () => `/api/enrollments/student/${state.enrollStudentId || state.studentId}/course/${state.enrollCourseId || state.courseId}`,
+        auth: true,
+        body: { grade: 92.5, status: 2 },
+        expect: [200]
+      }
+    ]
+  },
+  {
+    label: '🔒 Validation',
+    tests: [
+      {
+        id: 'validation_bad_email',
+        name: 'Reject invalid email (400)',
+        method: 'POST',
+        path: '/api/students',
+        auth: false,
+        body: { firstName: '', email: 'not-an-email', password: '123' },
+        expect: [400]
+      },
+      {
+        id: 'validation_no_token',
+        name: 'Reject missing token (401)',
+        method: 'GET',
+        path: '/api/courses',
+        auth: false,
+        expect: [401]
+      },
+      {
+        id: 'validation_duplicate_enroll',
+        name: 'Reject duplicate enrollment (409)',
+        method: 'POST',
+        path: '/api/enrollments',
+        auth: true,
+        useStudentToken: true,
+        bodyFn: () => ({ studentId: state.enrollStudentId || state.studentId, courseId: state.enrollCourseId || state.courseId }),
+        expect: [409],
+        note: 'Expects 409 Conflict — student already enrolled in this course'
+      }
+    ]
+  }
+];
+
+const allTests = groups.flatMap(g => g.tests);
+
+// ── Build Sidebar ─────────────────────────────────────────────────────────────
+function buildSidebar() {
+  const sidebar = document.getElementById('sidebar');
+  sidebar.innerHTML = groups.map(g => `
+    <div class="group-label">${g.label}</div>
+    ${g.tests.map(t => `
+      <div class="test-item" id="item_${t.id}" onclick="showTest('${t.id}')">
+        <span class="method-badge badge-${t.method.toLowerCase()}">${t.method}</span>
+        <span class="test-name">${t.name}</span>
+        <span class="status-icon" id="icon_${t.id}">○</span>
+      </div>
+    `).join('')}
+  `).join('');
+}
+
+// ── Show Test Detail ──────────────────────────────────────────────────────────
+function showTest(id) {
+  activeTest = id;
+  document.querySelectorAll('.test-item').forEach(el => el.classList.remove('active'));
+  const item = document.getElementById(`item_${id}`);
+  if (item) item.classList.add('active');
+
+  const test = allTests.find(t => t.id === id);
+  if (!test) return;
+
+  const result = results[id];
+  const path = test.pathFn ? test.pathFn() : test.path;
+  const body = test.bodyFn ? test.bodyFn() : test.body;
+
+  const statusHtml = result
+    ? result.status === 'running'
+      ? `<span class="status-pill pill-run">RUNNING</span>`
+      : result.pass
+        ? `<span class="status-pill pill-pass">✓ PASSED</span> <span style="color:var(--muted);font-size:11px">${result.httpStatus} · ${result.ms}ms</span>`
+        : `<span class="status-pill pill-fail">✗ FAILED</span> <span style="color:var(--muted);font-size:11px">${result.httpStatus} · ${result.ms}ms</span>`
+    : `<span class="status-pill pill-idle">PENDING</span>`;
+
+  document.getElementById('detail').innerHTML = `
+    <div class="detail-header fade-in">
+      <div>
+        <div class="detail-title">${test.name}</div>
+        <div class="detail-subtitle">${test.method} ${path}</div>
+      </div>
+      <button class="run-btn" onclick="runSingle('${id}')">▶ Run</button>
+    </div>
+
+    ${test.note ? `<div class="note">ℹ️ ${test.note}</div>` : ''}
+
+    <div class="section-label">Expected Status Codes</div>
+    <div class="code-block">${test.expect.join(', ')}</div>
+
+    ${body ? `
+      <div class="section-label">Request Body</div>
+      <div class="code-block">${highlight(JSON.stringify(body, null, 2))}</div>
+    ` : ''}
+
+    <div class="section-label">Result</div>
+    <div class="result-box">
+      <div class="result-header">
+        ${statusHtml}
+      </div>
+      <div class="result-body" id="resultBody">
+        ${result && result.data ? highlight(JSON.stringify(result.data, null, 2)) : result && result.error ? `<span style="color:var(--red)">${result.error}</span>` : '<span style="color:var(--muted)">Not run yet</span>'}
+      </div>
+    </div>
+  `;
+}
+
+// ── Run Single Test ───────────────────────────────────────────────────────────
+async function runSingle(id) {
+  const test = allTests.find(t => t.id === id);
+  if (!test) return;
+
+  const base = document.getElementById('baseUrl').value.replace(/\/$/, '');
+  const path = test.pathFn ? test.pathFn() : test.path;
+  const body = test.bodyFn ? test.bodyFn() : test.body;
+  const url  = base + path;
+
+  setIcon(id, '⟳', 'run');
+  results[id] = { status: 'running' };
+  if (activeTest === id) showTest(id);
+
+  const headers = { 'Content-Type': 'application/json' };
+  const activeToken = test.useStudentToken ? studentToken : token;
+  if (test.auth && activeToken) headers['Authorization'] = `Bearer ${activeToken}`;
+
+  const start = Date.now();
+  try {
+    const res = await fetch(url, {
+      method: test.method,
+      headers,
+      body: body ? JSON.stringify(body) : undefined
+    });
+    const ms = Date.now() - start;
+    let data;
+    const raw = await res.text();
+    try { data = raw ? JSON.parse(raw) : { empty: true }; } catch { data = { raw }; }
+
+    const pass = test.expect.includes(res.status);
+    if (pass && test.after && data && !data.empty) test.after(data);
+
+    results[id] = { status: 'done', pass, httpStatus: res.status, ms, data };
+    setIcon(id, pass ? '✓' : '✗', pass ? 'pass' : 'fail');
+  } catch (err) {
+    const ms = Date.now() - start;
+    results[id] = { status: 'done', pass: false, httpStatus: 0, ms, error: err.message };
+    setIcon(id, '✗', 'fail');
+  }
+
+  updateStats();
+  if (activeTest === id) showTest(id);
+}
+
+// ── Run All ───────────────────────────────────────────────────────────────────
+async function runAll() {
+  const btn = document.getElementById('runAllBtn');
+  btn.disabled = true;
+  btn.textContent = '⟳ Running...';
+
+  for (const test of allTests) {
+    await runSingle(test.id);
+    await new Promise(r => setTimeout(r, 300));
+  }
+
+  btn.disabled = false;
+  btn.textContent = '▶ Run All Tests';
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function setIcon(id, icon, cls) {
+  const el = document.getElementById(`icon_${id}`);
+  if (!el) return;
+  const colors = { pass: 'var(--green)', fail: 'var(--red)', run: 'var(--yellow)', idle: 'var(--muted)' };
+  el.textContent = icon;
+  el.style.color = colors[cls] || 'var(--muted)';
+}
+
+function updateStats() {
+  const vals = Object.values(results).filter(r => r.status === 'done');
+  const pass = vals.filter(r => r.pass).length;
+  const fail = vals.filter(r => !r.pass).length;
+  const pend = allTests.length - vals.length;
+  document.getElementById('passCount').textContent = `${pass} passed`;
+  document.getElementById('failCount').textContent = `${fail} failed`;
+  document.getElementById('skipCount').textContent = `${pend} pending`;
+}
+
+function highlight(json) {
+  return json
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"([^"]+)":/g, '<span class="json-key">"$1"</span>:')
+    .replace(/: "([^"]*)"/g, ': <span class="json-str">"$1"</span>')
+    .replace(/: (\d+\.?\d*)/g, ': <span class="json-num">$1</span>')
+    .replace(/: (true|false)/g, ': <span class="json-bool">$1</span>')
+    .replace(/: null/g, ': <span class="json-null">null</span>');
+}
+
+// ── Init ─────────────────────────────────────────────────────────────────────
+buildSidebar();
+updateStats();
+</script>
+</body>
+</html>
