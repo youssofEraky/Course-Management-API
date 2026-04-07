@@ -4316,11 +4316,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\WIN 10\\Desktop\\CMS\\CourseManagementAPI.csproj",
+      "projectUniqueName": "C:\\Users\\WIN 10\\Desktop\\Course-Management-API\\CourseManagementAPI.csproj",
       "projectName": "CourseManagementAPI",
-      "projectPath": "C:\\Users\\WIN 10\\Desktop\\CMS\\CourseManagementAPI.csproj",
+      "projectPath": "C:\\Users\\WIN 10\\Desktop\\Course-Management-API\\CourseManagementAPI.csproj",
       "packagesPath": "C:\\Users\\WIN 10\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\WIN 10\\Desktop\\CMS\\obj\\",
+      "outputPath": "C:\\Users\\WIN 10\\Desktop\\Course-Management-API\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "C:\\Users\\WIN 10\\AppData\\Roaming\\NuGet\\NuGet.Config"

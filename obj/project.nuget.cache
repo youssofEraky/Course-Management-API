@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "nJrZyNl8Mus=",
+  "dgSpecHash": "tYoyV6wLnY0=",
   "success": true,
-  "projectFilePath": "C:\\Users\\WIN 10\\Desktop\\CMS\\CourseManagementAPI.csproj",
+  "projectFilePath": "C:\\Users\\WIN 10\\Desktop\\Course-Management-API\\CourseManagementAPI.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\WIN 10\\.nuget\\packages\\azure.core\\1.47.1\\azure.core.1.47.1.nupkg.sha512",
     "C:\\Users\\WIN 10\\.nuget\\packages\\azure.identity\\1.14.2\\azure.identity.1.14.2.nupkg.sha512",

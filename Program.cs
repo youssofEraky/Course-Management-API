@@ -22,7 +22,7 @@ builder.Services.AddCors(options =>
 
 // ── Database ────────────────────────────────────────────────────────────────
 builder.Services.AddDbContext<AppDbContext>(options =>
-   options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
+   options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 // ── Services (Dependency Injection) ─────────────────────────────────────────
 builder.Services.AddScoped<IInstructorService, InstructorService>();
 builder.Services.AddScoped<IStudentService,    StudentService>();
@@ -91,11 +91,10 @@ builder.Services.AddSwaggerGen(c =>
 // ── Build ────────────────────────────────────────────────────────────────────
 var app = builder.Build();
 
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+
+app.UseSwagger();
+app.UseSwaggerUI();
+
 
 app.UseCors();
 app.UseHttpsRedirection();
